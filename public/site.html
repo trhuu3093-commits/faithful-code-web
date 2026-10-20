@@ -378,7 +378,7 @@ details p,.dul li{line-height:1.6}
 .contact h2 span.motion-touch{transform:translateX(3vw) skewX(-8deg);color:var(--lime)}
 /* Nền lỏng cố định theo viewport lớn nhất: thanh địa chỉ di động ẩn/hiện không làm nền co giãn */
 #gl{bottom:auto;height:100vh;height:100lvh}
-@media(pointer:coarse){.glow{mix-blend-mode:normal;opacity:.7}.ov{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(5,5,8,.78)}}
+@media(pointer:coarse){.card{transform:none;transition:none;box-shadow:0 -10px 24px rgba(0,0,0,.3)}.card::after{display:none}.glow{mix-blend-mode:normal;opacity:.7}.ov{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(5,5,8,.78)}}
 .liquid-fallback{filter:blur(6px);transform:scale(1.04)}
 @media(prefers-reduced-motion:reduce){
  html{scroll-behavior:auto}
@@ -484,7 +484,7 @@ document.addEventListener('pointercancel',e=>{if(e.pointerType==='mouse')return;
 addEventListener('blur',releaseTouch);
 /* autopilot: hiệu ứng tự chạy trên mọi thiết bị khi không có con trỏ / chạm */
 (function(){
-  const cardsA=()=>document.querySelectorAll('.card[data-go].on');
+  const COARSE=matchMedia('(pointer:coarse)').matches;const cardsA=()=>document.querySelectorAll('.card[data-go].on');
   function loop(now){
     if(motionPreference.matches){glow.style.transform='translate(-400px,-400px)';hs.forEach(s=>s.style.transform='');c.style.transform='';cardsA().forEach(cd=>{cd.style.setProperty('--rx','0deg');cd.style.setProperty('--ry','0deg')});requestAnimationFrame(loop);return}
     const idle=now-lastPtr>2200;
@@ -494,7 +494,7 @@ addEventListener('blur',releaseTouch);
     glow.style.transform='translate('+gX+'px,'+gY+'px)';
     const y=scrollY;hs.forEach((s,i)=>s.style.transform='translateX('+(y*s.dataset.s*3+Math.sin(now/1600+i*1.7)*16)+'px)');
     if(!ctaAct)c.style.transform='translate('+Math.sin(now/900)*6+'px,'+Math.cos(now/1100)*4+'px)';
-    cardsA().forEach((cd,i)=>{if(cd._act&&!idle)return;const t=now/1800+i*1.3;
+    if(!COARSE)cardsA().forEach((cd,i)=>{if(cd._act&&!idle)return;const t=now/1800+i*1.3;
       cd.style.setProperty('--ry',(Math.sin(t)*2.6).toFixed(2)+'deg');cd.style.setProperty('--rx',(Math.cos(t*.8)*1.8).toFixed(2)+'deg');
       cd.style.setProperty('--mx',(50+Math.sin(t*1.1)*38).toFixed(1)+'%');cd.style.setProperty('--my',(40+Math.cos(t)*30).toFixed(1)+'%')});
     requestAnimationFrame(loop)}
@@ -1932,8 +1932,9 @@ const reduced=motionPreference.matches;
 const cards=[...document.querySelectorAll('.card[data-go]')];
 const svh=document.createElement('div');svh.style.cssText='position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none';svh.setAttribute('aria-hidden','true');document.body.append(svh);
 function sizeStack(){const vh=Math.min(innerHeight,svh.offsetHeight||innerHeight);cards.forEach((card,i)=>card.style.setProperty('--stack-top',Math.min(84+i*22,vh-card.offsetHeight-24)+'px'))}
-addEventListener('resize',sizeStack,{passive:true});
-if(window.visualViewport)visualViewport.addEventListener('resize',sizeStack,{passive:true});
+const COARSE2=matchMedia('(pointer:coarse)').matches;let lastW=innerWidth;
+addEventListener('resize',()=>{if(COARSE2&&innerWidth===lastW)return;lastW=innerWidth;sizeStack()},{passive:true});
+if(window.visualViewport&&!COARSE2)visualViewport.addEventListener('resize',sizeStack,{passive:true});
 if('ResizeObserver' in window){const sizes=new ResizeObserver(sizeStack);cards.forEach(card=>sizes.observe(card))}
 requestAnimationFrame(sizeStack);
 const ART={
