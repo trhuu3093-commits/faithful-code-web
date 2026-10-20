@@ -9,6 +9,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "CHÍ QUY® — Creative Department" },
       { property: "og:description", content: "Creative department làm website, video và trải nghiệm sự kiện. Chọn demo, đặt mua và phát triển theo ý bạn." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://faithful-code-web.lovable.app/images/chiquy-preview.jpg" },
+      { name: "twitter:image", content: "https://faithful-code-web.lovable.app/images/chiquy-preview.jpg" },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
       { name: "twitter:card", content: "summary_large_image" },
