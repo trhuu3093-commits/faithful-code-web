@@ -378,6 +378,8 @@ details p,.dul li{line-height:1.6}
 .contact h2 span.motion-touch{transform:translateX(3vw) skewX(-8deg);color:var(--lime)}
 /* Nền lỏng cố định theo viewport lớn nhất: thanh địa chỉ di động ẩn/hiện không làm nền co giãn */
 #gl{bottom:auto;height:100vh;height:100lvh}
+@media(pointer:coarse){.glow{mix-blend-mode:normal;opacity:.7}.ov{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(5,5,8,.78)}}
+.liquid-fallback{filter:blur(6px);transform:scale(1.04)}
 @media(prefers-reduced-motion:reduce){
  html{scroll-behavior:auto}
  *,*::before,*::after{animation:none!important;transition:none!important}
@@ -510,7 +512,7 @@ function fallbackBackground(){
     fw=A>1.6?4:A>=1?2.5*A:2.5;fh=A>1.6?4/A:A>=1?2.5:2.5/A;ox=(4-fw)/2;oy=(2.5-fh)/2;image=ctx.createImageData(bg.width,bg.height);drawn=false}
   const fract=v=>v-Math.floor(v),mix=(a,b,s)=>a+(b-a)*s;
   function smooth(a,b,v){const s=Math.max(0,Math.min(1,(v-a)/(b-a)));return s*s*(3-2*s)}
-  function hash(x,y){return fract(Math.sin(x*127.1+y*311.7)*43758.5453)}
+  function hash(x,y){let a=fract(x*.1031),b=fract(y*.1031),c=a;const d=a*(b+33.33)+b*(c+33.33)+c*(a+33.33);a+=d;b+=d;c+=d;return fract((a+b)*c)}
   function noise(x,y){const ix=Math.floor(x),iy=Math.floor(y),fx=fract(x),fy=fract(y),sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);return mix(mix(hash(ix,iy),hash(ix+1,iy),sx),mix(hash(ix,iy+1),hash(ix+1,iy+1),sx),sy)}
   function fbm(x,y){let v=0,a=.5;for(let i=0;i<4;i++){v+=a*noise(x,y);x*=2;y*=2;a*=.5}return v}
   let last=-Infinity,drawn=false;size();addEventListener('resize',size,{passive:true});
@@ -535,7 +537,7 @@ cv.addEventListener('webglcontextlost',e=>{e.preventDefault();if(!cv.hidden)fall
 const vs='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
 const precision=gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER,gl.HIGH_FLOAT);
 const fs=`precision ${precision&&precision.precision>0?'highp':'mediump'} float;uniform vec2 r,m;uniform float t;
-float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float h(vec2 p){vec3 q=fract(vec3(p.xyx)*.1031);q+=dot(q,q.yzx+33.33);return fract((q.x+q.y)*q.z);}
 float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p*=2.;a*=.5;}return v;}
 void main(){float A=r.x/r.y;vec2 sz=A>1.6?vec2(4.,4./A):A>=1.?vec2(2.5*A,2.5):vec2(2.5,2.5/A),o=(vec2(4.,2.5)-sz)*.5;vec2 p=o+gl_FragCoord.xy/r*sz,mm=o+m*sz;float d=distance(p,mm);
@@ -552,10 +554,11 @@ if(!gl.getProgramParameter(pr,gl.LINK_STATUS)){fallbackBackground();return}gl.us
 const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
 const a=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,2,gl.FLOAT,false,0,0);
 const U=n=>gl.getUniformLocation(pr,n),ur=U('r'),um=U('m'),ut=U('t');
-function rs(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,A=w/h,W=A>=1?640:Math.round(640*A),H=A>=1?Math.round(640/A):640;bgH=h;
+const LITE=matchMedia('(pointer:coarse)').matches,RES=LITE?420:640;let lastF=-1e9;
+function rs(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,A=w/h,W=A>=1?RES:Math.round(RES*A),H=A>=1?Math.round(RES/A):RES;bgH=h;
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;gl.viewport(0,0,W,H);delete cv.dataset.drawn}}rs();
 addEventListener('resize',rs,{passive:true});
-function f(ms){if(cv.hidden)return;if(!motionPreference.matches||!cv.dataset.drawn){mx+=(tx-mx)*.06;my+=(ty-my)*.06;gl.uniform2f(ur,cv.width,cv.height);gl.uniform2f(um,mx,my);gl.uniform1f(ut,motionPreference.matches?0:ms/1000);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);cv.dataset.drawn='true'}requestAnimationFrame(f)}
+function f(ms){if(cv.hidden)return;if(LITE&&ms-lastF<30){requestAnimationFrame(f);return}lastF=ms;if(!motionPreference.matches||!cv.dataset.drawn){mx+=(tx-mx)*.06;my+=(ty-my)*.06;gl.uniform2f(ur,cv.width,cv.height);gl.uniform2f(um,mx,my);gl.uniform1f(ut,motionPreference.matches?0:(ms/1000)%600);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);cv.dataset.drawn='true'}requestAnimationFrame(f)}
 requestAnimationFrame(f);
 })();
 </script>
